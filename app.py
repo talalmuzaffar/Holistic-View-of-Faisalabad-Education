@@ -9,12 +9,13 @@ import requests
 # Set page config
 st.set_page_config(
     page_title="Overview - Education Access in Faisalabad",
-    page_icon="��",
+    page_icon="📚",
     layout="wide",
     initial_sidebar_state="collapsed"  # This will collapse the sidebar by default
 )
 
 # Helper functions
+@st.cache_data
 def format_large_number(num):
     if num >= 1_000_000:
         return f"{num/1_000_000:.1f}M"
@@ -22,6 +23,7 @@ def format_large_number(num):
         return f"{num/1_000:.1f}K"
     return str(num)
 
+@st.cache_data
 def calculate_percentage_change(value1, value2):
     return ((value2 - value1) / value1) * 100
 
@@ -175,10 +177,14 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# Load and prepare data
-@st.cache_data
+# Load and prepare data with better caching
+@st.cache_data(ttl=3600)  # Cache for 1 hour
 def load_data():
     df = pd.read_csv('data_2023.csv')
+    # Pre-calculate common filters
+    df['is_literacy'] = df['Indicator'] == 'Literate %'
+    df['is_out_of_school'] = df['Indicator'] == 'Out of School Children (5-16)'
+    df['is_never_attended'] = df['Indicator'] == 'Never to School (all)'
     return df
 
 df = load_data()
@@ -211,18 +217,18 @@ col1, col2, col3 = st.columns(3)
 
 # Calculate key metrics
 total_out_of_school = df[
-    (df['Indicator'] == 'Out of School Children (5-16)') & 
+    (df['is_out_of_school']) & 
     (df['AreaType'] == 'Total') & 
     (df['Region'] == 'Faisalabad District')
 ]['Total'].values[0]
 
 lowest_female_literacy = df[
-    (df['Indicator'] == 'Literate %') & 
+    (df['is_literacy']) & 
     (df['AreaType'] == 'Rural')
 ]['Female'].min()
 
 total_never_attended = df[
-    (df['Indicator'] == 'Never to School (all)') & 
+    (df['is_never_attended']) & 
     (df['AreaType'] == 'Total') & 
     (df['Region'] == 'Faisalabad District')
 ]['Total'].values[0]
@@ -256,7 +262,7 @@ with col3:
 
 # Calculate additional insights
 urban_rural_literacy = df[
-    (df['Indicator'] == 'Literate %') & 
+    (df['is_literacy']) & 
     (df['Region'] == 'Faisalabad District')
 ]
 urban_literacy = urban_rural_literacy[urban_rural_literacy['AreaType'] == 'Urban']['Total'].values[0]
@@ -264,7 +270,7 @@ rural_literacy = urban_rural_literacy[urban_rural_literacy['AreaType'] == 'Rural
 literacy_gap = urban_literacy - rural_literacy
 
 gender_data = df[
-    (df['Indicator'] == 'Out of School Children (5-16)') & 
+    (df['is_out_of_school']) & 
     (df['AreaType'] == 'Total') & 
     (df['Region'] == 'Faisalabad District')
 ]

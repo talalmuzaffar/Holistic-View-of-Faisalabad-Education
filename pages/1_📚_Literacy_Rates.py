@@ -47,13 +47,48 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# Load data
-@st.cache_data
+# Load data with caching
+@st.cache_data(ttl=3600)  # Cache for 1 hour
 def load_data():
     df = pd.read_csv('data_2023.csv')
+    # Pre-calculate common filters
+    df['is_literacy'] = df['Indicator'] == 'Literate %'
     return df
 
 df = load_data()
+
+# Pre-filter data for visualizations
+@st.cache_data
+def prepare_visualization_data(df):
+    literacy_data = df[
+        (df['is_literacy']) & 
+        (df['AreaType'].isin(['Rural', 'Urban']))
+    ].copy()
+    return literacy_data
+
+# Calculate statistics with caching
+@st.cache_data
+def calculate_statistics(df):
+    urban_literacy = df[
+        (df['is_literacy']) & 
+        (df['AreaType'] == 'Urban') & 
+        (df['Region'] == 'Faisalabad District')
+    ]['Total'].values[0]
+
+    rural_literacy = df[
+        (df['is_literacy']) & 
+        (df['AreaType'] == 'Rural') & 
+        (df['Region'] == 'Faisalabad District')
+    ]['Total'].values[0]
+
+    gender_gap = df[
+        (df['is_literacy']) & 
+        (df['AreaType'] == 'Total') & 
+        (df['Region'] == 'Faisalabad District')
+    ]
+    male_female_gap = float(gender_gap['Male'].values[0]) - float(gender_gap['Female'].values[0])
+    
+    return urban_literacy, rural_literacy, male_female_gap
 
 # Page title
 st.title("📚 Literacy Rate Analysis")
@@ -71,24 +106,7 @@ st.markdown("""
 col1, col2, col3 = st.columns(3)
 
 # Calculate statistics
-urban_literacy = df[
-    (df['Indicator'] == 'Literate %') & 
-    (df['AreaType'] == 'Urban') & 
-    (df['Region'] == 'Faisalabad District')
-]['Total'].values[0]
-
-rural_literacy = df[
-    (df['Indicator'] == 'Literate %') & 
-    (df['AreaType'] == 'Rural') & 
-    (df['Region'] == 'Faisalabad District')
-]['Total'].values[0]
-
-gender_gap = df[
-    (df['Indicator'] == 'Literate %') & 
-    (df['AreaType'] == 'Total') & 
-    (df['Region'] == 'Faisalabad District')
-]
-male_female_gap = float(gender_gap['Male'].values[0]) - float(gender_gap['Female'].values[0])
+urban_literacy, rural_literacy, male_female_gap = calculate_statistics(df)
 
 with col1:
     st.markdown(f"""
@@ -118,10 +136,7 @@ with col3:
 st.subheader("Literacy Rates by Region and Gender")
 
 # Filter data for literacy rates
-literacy_data = df[
-    (df['Indicator'] == 'Literate %') & 
-    (df['AreaType'].isin(['Rural', 'Urban']))
-].copy()
+literacy_data = prepare_visualization_data(df)
 
 # Create bar chart
 fig_literacy = px.bar(
