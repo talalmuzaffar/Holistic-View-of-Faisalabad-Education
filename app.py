@@ -1,17 +1,13 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-import plotly.graph_objects as go
-from streamlit_lottie import st_lottie
-import json
-import requests
 
 # Set page config
 st.set_page_config(
     page_title="Overview - Education Access in Faisalabad",
     page_icon="📚",
     layout="wide",
-    initial_sidebar_state="collapsed"  # This will collapse the sidebar by default
+    initial_sidebar_state="collapsed"
 )
 
 # Helper functions
@@ -23,34 +19,21 @@ def format_large_number(num):
         return f"{num/1_000:.1f}K"
     return str(num)
 
-@st.cache_data
-def calculate_percentage_change(value1, value2):
-    return ((value2 - value1) / value1) * 100
+# Load and prepare data with caching
+@st.cache_data(ttl=3600)
+def load_data():
+    df = pd.read_csv('data_2023.csv')
+    # Pre-calculate common filters
+    df['is_literacy'] = df['Indicator'] == 'Literate %'
+    df['is_out_of_school'] = df['Indicator'] == 'Out of School Children (5-16)'
+    df['is_never_attended'] = df['Indicator'] == 'Never to School (all)'
+    return df
+
+df = load_data()
 
 # Custom CSS with SDG color scheme
 st.markdown("""
 <style>
-    /* Hide Streamlit's default top padding */
-    .block-container {
-        padding-top: 1rem !important;
-        padding-bottom: 0rem !important;
-    }
-    
-    /* Hide the header decoration */
-    .decoration {
-        display: none !important;
-    }
-    
-    /* Adjust header margins */
-    header {
-        margin-bottom: 0 !important;
-    }
-    
-    /* Main Styles */
-    .main {
-        padding: 0;
-    }
-    
     /* Typography */
     * {
         font-family: 'Poppins', sans-serif;
@@ -114,9 +97,6 @@ st.markdown("""
     }
     
     /* Insight Cards */
-    .insights-container {
-        margin-top: 3rem;
-    }
     .insight-card {
         background-color: white;
         padding: 1.5rem;
@@ -176,28 +156,6 @@ st.markdown("""
     }
 </style>
 """, unsafe_allow_html=True)
-
-# Load and prepare data with better caching
-@st.cache_data(ttl=3600)  # Cache for 1 hour
-def load_data():
-    df = pd.read_csv('data_2023.csv')
-    # Pre-calculate common filters
-    df['is_literacy'] = df['Indicator'] == 'Literate %'
-    df['is_out_of_school'] = df['Indicator'] == 'Out of School Children (5-16)'
-    df['is_never_attended'] = df['Indicator'] == 'Never to School (all)'
-    return df
-
-df = load_data()
-
-# Helper function to load Lottie files
-def load_lottie_url(url: str):
-    r = requests.get(url)
-    if r.status_code != 200:
-        return None
-    return r.json()
-
-# Load Lottie animation
-lottie_education = load_lottie_url('https://assets4.lottiefiles.com/packages/lf20_h6ykqbyg.json')
 
 # Hero Section
 st.markdown("""
@@ -268,13 +226,6 @@ urban_rural_literacy = df[
 urban_literacy = urban_rural_literacy[urban_rural_literacy['AreaType'] == 'Urban']['Total'].values[0]
 rural_literacy = urban_rural_literacy[urban_rural_literacy['AreaType'] == 'Rural']['Total'].values[0]
 literacy_gap = urban_literacy - rural_literacy
-
-gender_data = df[
-    (df['is_out_of_school']) & 
-    (df['AreaType'] == 'Total') & 
-    (df['Region'] == 'Faisalabad District')
-]
-female_ratio = (gender_data['Female'].values[0] / gender_data['Total'].values[0]) * 100
 
 # Divider
 st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
