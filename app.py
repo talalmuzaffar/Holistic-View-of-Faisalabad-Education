@@ -117,12 +117,14 @@ st.markdown("""
     }
     .insight-card {
         background-color: white;
-        padding: 1.2rem;
+        padding: 1.5rem;
         border-radius: 10px;
         border: 1px solid #DEE2E6;
         margin-bottom: 1rem;
-        max-width: 400px;
         height: 100%;
+        min-height: 280px;
+        display: flex;
+        flex-direction: column;
     }
     .insight-icon {
         font-size: 1.3rem;
@@ -138,12 +140,13 @@ st.markdown("""
         font-size: 0.9rem;
         color: #2E2E2E;
         line-height: 1.4;
+        flex-grow: 1;
     }
     .insight-stat {
         font-size: 1.1rem;
         font-weight: 600;
         color: #E5243B;
-        margin-top: 0.5rem;
+        margin-top: auto;
         margin-bottom: 1rem;
     }
     .view-details-btn {
@@ -155,8 +158,9 @@ st.markdown("""
         border-radius: 5px;
         font-size: 0.9rem;
         font-weight: 500;
-        margin-top: 0.5rem;
         transition: all 0.2s ease;
+        width: 100%;
+        text-align: center;
     }
     .view-details-btn:hover {
         background-color: #E5243B;
