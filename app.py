@@ -195,6 +195,10 @@ st.markdown("""
     <h1 class="hero-title">📚 Education Access in Faisalabad</h1>
     <p class="hero-subtitle">Exploring Educational Disparities and SDG 4 Progress</p>
     <div class="sdg-pill">SDG 4: Quality Education • Census 2023</div>
+    <p style="margin-top: 1rem; font-size: 0.9rem; color: #666;">
+        Data Source: <a href="https://www.pbs.gov.pk/digital-census/detailed-results" target="_blank" style="color: #E5243B;">Pakistan Bureau of Statistics Digital Census 2023</a><br>
+        Developed by Global Shapers Faisalabad Hub
+    </p>
 </div>
 """, unsafe_allow_html=True)
 

@@ -35,11 +35,15 @@ The dashboard will open in your default web browser at `http://localhost:8501`.
 
 ## Data Source
 
-The dashboard uses education data from Faisalabad for the year 2023, including:
+The dashboard uses education data from the [Pakistan Bureau of Statistics Digital Census 2023](https://www.pbs.gov.pk/digital-census/detailed-results), focusing on Faisalabad District metrics including:
 - Literacy rates by gender and region
 - Out-of-school children statistics
 - School attendance metrics
 - Urban vs rural education disparities
+
+## Development
+
+This project was developed by Global Shapers Faisalabad Hub as part of their initiative to highlight and address educational disparities in the region.
 
 ## Contributing
 
