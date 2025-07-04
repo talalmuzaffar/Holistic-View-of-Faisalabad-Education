@@ -165,7 +165,7 @@ st.markdown("""
     .divider {
         height: 3px;
         background-color: #FCE4E4;
-        margin: 2rem 0;
+        margin: 1rem 0;
         border-radius: 2px;
     }
 </style>
@@ -287,7 +287,7 @@ with col1:
         <div class="insight-stat">
             {literacy_gap:.1f}% urban-rural gap
         </div>
-        <a href="Literacy_Rates" class="view-details-btn">View Details →</a>
+        <a href="Literacy_Rates" class="view-details-btn">View Detailed Analysis →</a>
     </div>
     """, unsafe_allow_html=True)
 
@@ -302,7 +302,7 @@ with col2:
         <div class="insight-stat">
             {format_large_number(total_out_of_school)} children
         </div>
-        <a href="Out_of_School" class="view-details-btn">View Details →</a>
+        <a href="Out_of_School" class="view-details-btn">View Detailed Analysis →</a>
     </div>
     """, unsafe_allow_html=True)
 
@@ -317,6 +317,6 @@ with col3:
         <div class="insight-stat">
             {format_large_number(total_never_attended)} people
         </div>
-        <a href="Never_Attended" class="view-details-btn">View Details →</a>
+        <a href="Never_Attended" class="view-details-btn">View Detailed Analysis →</a>
     </div>
     """, unsafe_allow_html=True)
