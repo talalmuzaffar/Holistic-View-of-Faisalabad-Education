@@ -1,6 +1,9 @@
 import streamlit as st
-import pandas as pd
-import plotly.express as px
+
+from faisalabad_education.charts import literacy_bar_chart
+from faisalabad_education.components import stat_card
+from faisalabad_education.data import calculate_statistics, load_literacy_data, prepare_visualization_data
+from faisalabad_education.styles import PAGE_CSS
 
 # Set page config
 st.set_page_config(
@@ -10,85 +13,10 @@ st.set_page_config(
 )
 
 # Custom CSS
-st.markdown("""
-<style>
-    /* Typography */
-    * {
-        font-family: 'Poppins', sans-serif;
-    }
-    
-    /* Insight Box */
-    .insight-box {
-        background-color: #FCE4E4;
-        padding: 1.5rem;
-        border-radius: 10px;
-        border-left: 5px solid #E5243B;
-        margin: 1rem 0;
-    }
-    
-    /* Stats Container */
-    .stats-container {
-        background-color: white;
-        padding: 1.5rem;
-        border-radius: 10px;
-        border: 1px solid #DEE2E6;
-        margin: 1rem 0;
-    }
-    .stat-value {
-        font-size: 2rem;
-        font-weight: 600;
-        color: #E5243B;
-    }
-    .stat-label {
-        font-size: 0.9rem;
-        color: #2E2E2E;
-        opacity: 0.7;
-    }
-</style>
-""", unsafe_allow_html=True)
+st.markdown(PAGE_CSS, unsafe_allow_html=True)
 
 # Load data with caching
-@st.cache_data(ttl=3600)  # Cache for 1 hour
-def load_data():
-    df = pd.read_csv('data_2023.csv')
-    # Pre-calculate common filters
-    df['is_literacy'] = df['Indicator'] == 'Literate %'
-    return df
-
-df = load_data()
-
-# Pre-filter data for visualizations
-@st.cache_data
-def prepare_visualization_data(df):
-    literacy_data = df[
-        (df['is_literacy']) & 
-        (df['AreaType'].isin(['Rural', 'Urban']))
-    ].copy()
-    return literacy_data
-
-# Calculate statistics with caching
-@st.cache_data
-def calculate_statistics(df):
-    urban_literacy = df[
-        (df['is_literacy']) & 
-        (df['AreaType'] == 'Urban') & 
-        (df['Region'] == 'Faisalabad District')
-    ]['Total'].values[0]
-
-    rural_literacy = df[
-        (df['is_literacy']) & 
-        (df['AreaType'] == 'Rural') & 
-        (df['Region'] == 'Faisalabad District')
-    ]['Total'].values[0]
-
-    gender_gap = df[
-        (df['is_literacy']) & 
-        (df['AreaType'] == 'Total') & 
-        (df['Region'] == 'Faisalabad District')
-    ]
-    male_female_gap = float(gender_gap['Male'].values[0]) - float(gender_gap['Female'].values[0])
-    
-    return urban_literacy, rural_literacy, male_female_gap
+df = load_literacy_data()
 
 # Page title
 st.title("📚 Literacy Rate Analysis")
@@ -109,28 +37,13 @@ col1, col2, col3 = st.columns(3)
 urban_literacy, rural_literacy, male_female_gap = calculate_statistics(df)
 
 with col1:
-    st.markdown(f"""
-    <div class="stats-container">
-        <div class="stat-value">{urban_literacy:.1f}%</div>
-        <div class="stat-label">Urban Literacy Rate</div>
-    </div>
-    """, unsafe_allow_html=True)
+    stat_card(f"{urban_literacy:.1f}%", "Urban Literacy Rate")
 
 with col2:
-    st.markdown(f"""
-    <div class="stats-container">
-        <div class="stat-value">{rural_literacy:.1f}%</div>
-        <div class="stat-label">Rural Literacy Rate</div>
-    </div>
-    """, unsafe_allow_html=True)
+    stat_card(f"{rural_literacy:.1f}%", "Rural Literacy Rate")
 
 with col3:
-    st.markdown(f"""
-    <div class="stats-container">
-        <div class="stat-value">{male_female_gap:.1f}%</div>
-        <div class="stat-label">Gender Gap in Literacy</div>
-    </div>
-    """, unsafe_allow_html=True)
+    stat_card(f"{male_female_gap:.1f}%", "Gender Gap in Literacy")
 
 # Main visualization
 st.subheader("Literacy Rates by Region and Gender")
@@ -139,26 +52,7 @@ st.subheader("Literacy Rates by Region and Gender")
 literacy_data = prepare_visualization_data(df)
 
 # Create bar chart
-fig_literacy = px.bar(
-    literacy_data,
-    x='Region',
-    y=['Male', 'Female'],
-    barmode='group',
-    title='Literacy Rates by Gender and Region',
-    color_discrete_sequence=['#2E2E2E', '#E5243B'],
-    labels={'value': 'Literacy Rate (%)', 'variable': 'Gender'}
-)
-
-fig_literacy.update_layout(
-    font_family="Poppins",
-    plot_bgcolor='rgba(0,0,0,0)',
-    paper_bgcolor='rgba(0,0,0,0)',
-    xaxis_title="Region",
-    yaxis_title="Literacy Rate (%)",
-    legend_title="Gender",
-    hoverlabel=dict(font_family="Poppins"),
-    title_font_family="Poppins"
-)
+fig_literacy = literacy_bar_chart(literacy_data)
 
 st.plotly_chart(fig_literacy, use_container_width=True)
 

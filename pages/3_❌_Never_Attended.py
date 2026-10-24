@@ -1,8 +1,13 @@
 import streamlit as st
-import pandas as pd
-import plotly.express as px
-import plotly.graph_objects as go
-import json
+
+from faisalabad_education.charts import never_attended_bar_chart, never_attended_treemap
+from faisalabad_education.data import (
+    filter_never_attended,
+    get_district_stats,
+    load_never_attended_data,
+    prepare_never_attended_viz_data,
+)
+from faisalabad_education.styles import NEVER_ATTENDED_CSS
 
 # Set page config
 st.set_page_config(
@@ -12,96 +17,10 @@ st.set_page_config(
 )
 
 # Custom CSS
-st.markdown("""
-<style>
-    /* Typography */
-    * {
-        font-family: 'Poppins', sans-serif;
-    }
-    
-    /* Insight Box */
-    .insight-box {
-        background-color: #FCE4E4;
-        padding: 1.5rem;
-        border-radius: 10px;
-        border-left: 5px solid #E5243B;
-        margin: 1rem 0;
-    }
-    
-    /* Stats Container */
-    .stats-container {
-        background-color: white;
-        padding: 1.5rem;
-        border-radius: 10px;
-        border: 1px solid #DEE2E6;
-        margin: 1rem 0;
-    }
-    .stat-value {
-        font-size: 2rem;
-        font-weight: 600;
-        color: #E5243B;
-    }
-    .stat-label {
-        font-size: 0.9rem;
-        color: #2E2E2E;
-        opacity: 0.7;
-    }
-    .metric-card {
-        background-color: white;
-        padding: 20px;
-        border-radius: 10px;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        text-align: left;
-    }
-    .metric-value {
-        font-size: 2.5rem;
-        font-weight: bold;
-        color: #E5243B;
-        margin: 0;
-        line-height: 1;
-    }
-    .metric-label {
-        color: #666;
-        font-size: 1rem;
-        margin-top: 8px;
-    }
-    .header-container {
-        background-color: #FEF2F2;
-        padding: 2rem;
-        border-radius: 10px;
-        margin-bottom: 2rem;
-        border-left: 5px solid #E5243B;
-    }
-    .header-title {
-        font-size: 2.5rem;
-        color: #1F2937;
-        margin-bottom: 1rem;
-    }
-    .header-description {
-        color: #4B5563;
-        font-size: 1.1rem;
-        line-height: 1.5;
-    }
-</style>
-""", unsafe_allow_html=True)
-
-# Helper functions
-def format_large_number(num):
-    if num >= 1_000_000:
-        return f"{num/1_000_000:.1f}M"
-    elif num >= 1_000:
-        return f"{num/1_000:.1f}K"
-    return str(num)
+st.markdown(NEVER_ATTENDED_CSS, unsafe_allow_html=True)
 
 # Load data
-@st.cache_data
-def load_data():
-    df = pd.read_csv('data_2023.csv')
-    with open('faisalabad_tehsils.geojson') as f:
-        geojson = json.load(f)
-    return df, geojson
-
-df, geojson = load_data()
+df, geojson = load_never_attended_data()
 
 # Title and description
 st.markdown("""
@@ -115,13 +34,10 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # Filter data for never attended school (specifically for age group 5-16)
-never_attended_df = df[df['Indicator'] == 'Never to School (5-16)'].copy()
+never_attended_df = filter_never_attended(df)
 
 # Get district level statistics
-district_stats = never_attended_df[
-    (never_attended_df['Region'] == 'Faisalabad District') & 
-    (never_attended_df['AreaType'] == 'Total')
-].iloc[0]
+district_stats = get_district_stats(never_attended_df)
 
 # Create metrics cards
 col1, col2, col3 = st.columns(3)
@@ -153,166 +69,20 @@ with col3:
 st.markdown("---")
 
 # Prepare data for visualization
-viz_data = never_attended_df[never_attended_df['Region'] != 'Faisalabad District'].copy()
-viz_data = viz_data[viz_data['AreaType'] != 'Total']
-
-# Ensure both Urban and Rural exist for each region
-all_regions = viz_data['Region'].unique()
-all_area_types = ['Urban', 'Rural']
-complete_data = []
-
-for region in all_regions:
-    region_data = viz_data[viz_data['Region'] == region]
-    total_region = region_data['Total'].sum()
-    
-    for area_type in all_area_types:
-        area_data = region_data[region_data['AreaType'] == area_type]
-        if len(area_data) == 0:
-            # If this area type doesn't exist, add it with 0 values
-            complete_data.append({
-                'Region': region,
-                'AreaType': area_type,
-                'Total': 0,
-                'Male': 0,
-                'Female': 0
-            })
-        else:
-            complete_data.extend(area_data.to_dict('records'))
-
-viz_data = pd.DataFrame(complete_data)
-
-# Calculate percentages for each area type
-viz_data['Percentage'] = (viz_data['Total'] / viz_data.groupby('Region')['Total'].transform('sum') * 100).round(1)
+viz_data = prepare_never_attended_viz_data(never_attended_df)
 
 # Create tabs for different visualizations
 tab1, tab2 = st.tabs(["📊 Distribution Overview", "📈 Detailed Comparison"])
 
 with tab1:
     # Create treemap
-    treemap_data = viz_data.copy()
-    treemap_data['Percentage_Label'] = treemap_data['Percentage'].apply(lambda x: f'{x:.1f}%')
-    
-    # Create color mapping
-    treemap_data['Color'] = treemap_data['AreaType'].map({
-        'Urban': '#7a0000',  # Dark red for urban
-        'Rural': '#E5243B'   # Light red for rural
-    })
-    
-    fig_treemap = px.treemap(
-        treemap_data,
-        path=[px.Constant("Faisalabad"), 'Region', 'AreaType'],
-        values='Total',
-        color='AreaType',
-        color_discrete_map={
-            'Urban': '#7a0000',  # Dark red for urban
-            'Rural': '#E5243B'   # Light red for rural
-        },
-        custom_data=['Total', 'Percentage_Label']
-    )
-    
-    fig_treemap.update_traces(
-        textinfo="label",
-        hovertemplate="""
-<b>%{label}</b><br>
-Number of children: %{customdata[0]:,.0f}<br>
-Percentage: %{customdata[1]}<extra></extra>
-""",
-        textfont={"color": "white"}  # Make text white for better visibility
-    )
-    
-    fig_treemap.update_layout(
-        title={
-            'text': 'Distribution of Out-of-School Children by Region',
-            'y':0.95,
-            'x':0.5,
-            'xanchor': 'center',
-            'yanchor': 'top'
-        },
-        height=600,
-        # Remove color axis since we're using discrete colors
-        coloraxis_showscale=False
-    )
-    
+    fig_treemap = never_attended_treemap(viz_data)
+
     st.plotly_chart(fig_treemap, use_container_width=True)
 
 with tab2:
     # Create bar chart
-    fig_bar = go.Figure()
-
-    # Add bars for Urban
-    urban_data = viz_data[viz_data['AreaType'] == 'Urban']
-    fig_bar.add_trace(go.Bar(
-        name='Urban',
-        x=urban_data['Region'],
-        y=urban_data['Total'],
-        text=urban_data['Total'].apply(lambda x: f'{x:,.0f}'),
-        textposition='auto',
-        marker_color='#7a0000',  # Dark red for urban
-        hovertemplate='<b>%{x}</b><br>' +
-                    'Urban Areas<br>' +
-                    'Children: %{text}<br>' +
-                    'Percentage: %{customdata}%<extra></extra>',
-        customdata=urban_data['Percentage'].round(1)
-    ))
-
-    # Add bars for Rural
-    rural_data = viz_data[viz_data['AreaType'] == 'Rural']
-    fig_bar.add_trace(go.Bar(
-        name='Rural',
-        x=rural_data['Region'],
-        y=rural_data['Total'],
-        text=rural_data['Total'].apply(lambda x: f'{x:,.0f}'),
-        textposition='auto',
-        marker_color='#E5243B',  # Light red for rural
-        hovertemplate='<b>%{x}</b><br>' +
-                    'Rural Areas<br>' +
-                    'Children: %{text}<br>' +
-                    'Percentage: %{customdata}%<extra></extra>',
-        customdata=rural_data['Percentage'].round(1)
-    ))
-
-    # Update layout
-    fig_bar.update_layout(
-        title={
-            'text': 'Urban vs Rural Distribution of Out-of-School Children',
-            'y':0.95,
-            'x':0.5,
-            'xanchor': 'center',
-            'yanchor': 'top'
-        },
-        xaxis_title="Region",
-        yaxis_title="Number of Children",
-        barmode='group',
-        bargap=0.2,
-        bargroupgap=0.1,
-        height=500,
-        showlegend=True,
-        legend=dict(
-            yanchor="top",
-            y=0.99,
-            xanchor="right",
-            x=0.99
-        ),
-        plot_bgcolor='white',
-        paper_bgcolor='white',
-    )
-
-    # Update axes
-    fig_bar.update_xaxes(
-        tickangle=45,
-        title_font={"size": 14},
-        title_standoff=25,
-        gridcolor='#F0F0F0'
-    )
-
-    fig_bar.update_yaxes(
-        title_font={"size": 14},
-        title_standoff=25,
-        gridcolor='#F0F0F0',
-        zeroline=True,
-        zerolinecolor='#E0E0E0',
-        zerolinewidth=1
-    )
+    fig_bar = never_attended_bar_chart(viz_data)
 
     # Display the chart
     st.plotly_chart(fig_bar, use_container_width=True)

@@ -33,6 +33,29 @@ streamlit run app.py
 
 The dashboard will open in your default web browser at `http://localhost:8501`.
 
+## Project Structure
+
+```
+Holistic-View-of-Faisalabad-Education/
+├── app.py                          # Overview page (Streamlit entry point)
+├── pages/
+│   ├── 1_📚_Literacy_Rates.py
+│   ├── 2_🚫_Out_of_School.py
+│   └── 3_❌_Never_Attended.py
+├── faisalabad_education/
+│   ├── __init__.py
+│   ├── config.py                   # Data file paths and SDG colours
+│   ├── data.py                     # Cached data loading and per-page calculations
+│   ├── charts.py                   # Plotly charts
+│   ├── styles.py                   # Page CSS
+│   └── components.py               # Number formatting and stat cards
+├── data/
+│   └── data_2023.csv               # Census 2023 education indicators
+├── requirements.txt
+├── packages.txt
+└── runtime.txt
+```
+
 ## Data Source
 
 The dashboard uses education data from the [Pakistan Bureau of Statistics Digital Census 2023](https://www.pbs.gov.pk/digital-census/detailed-results), focusing on Faisalabad District metrics including:
